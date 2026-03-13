@@ -1,0 +1,302 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+#map-container { position: relative; width: 100%; padding: 1rem 0; }
+h2 { font-size: 16px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+.subtitle { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 1rem; }
+#map-wrap { position: relative; width: 100%; height: 560px; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+#leaflet-map { width: 100%; height: 100%; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 12px; color: var(--color-text-secondary); }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.dot-univ { background: #185FA5; }
+.dot-grande { background: #3B6D11; }
+.dot-lycee-cpge { background: #BA7517; }
+.dot-lycee-bts { background: #993556; }
+.dot-ifsi { background: #7F77DD; }
+.note { font-size: 11px; color: var(--color-text-tertiary); margin-top: 8px; }
+</style>
+
+<div id="map-container">
+  <h2>Têtes de cordées de la réussite — Académie de Versailles</h2>
+  <p class="subtitle">Liste complète des établissements têtes de cordées 2025-2026</p>
+  <div id="map-wrap"><div id="leaflet-map"></div></div>
+  <div class="legend">
+    <div class="legend-item"><div class="dot dot-univ"></div> Université</div>
+    <div class="legend-item"><div class="dot dot-grande"></div> Grande école / École</div>
+    <div class="legend-item"><div class="dot dot-lycee-cpge"></div> Lycée CPGE</div>
+    <div class="legend-item"><div class="dot dot-lycee-bts"></div> Lycée BTS</div>
+    <div class="legend-item"><div class="dot dot-ifsi"></div> IFSI / Formation santé/social</div>
+  </div>
+  <p class="note">Cliquez sur un marqueur pour voir les cordées de l'établissement et accéder à son site.</p>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const etablissements = [
+  {
+    nom: "Lycée Camille Pissarro — Pontoise",
+    type: "lycee-cpge",
+    lat: 49.0503, lng: 2.0997,
+    url: "https://lyc-pissarro-pontoise.ac-versailles.fr",
+    cordees: ["Terre d'ingénieur", "Le BTS ESF, c'est possible !"]
+  },
+  {
+    nom: "Lycée Lakanal — Sceaux",
+    type: "lycee-cpge",
+    lat: 48.7763, lng: 2.2932,
+    url: "https://lyc-lakanal-sceaux.ac-versailles.fr",
+    cordees: ["AMBITION CPGE (Lakanal)", "Fabrique d'Excellence", "Fabrique d'Avenir"]
+  },
+  {
+    nom: "Lycée Saint-Exupéry — Mantes-la-Jolie",
+    type: "lycee-cpge",
+    lat: 48.9897, lng: 1.7174,
+    url: "https://lyc-st-exupery-mantes.ac-versailles.fr",
+    cordees: ["Fabrique d'Excellence", "Fabrique d'Avenir"]
+  },
+  {
+    nom: "LPO Joliot-Curie — Nanterre",
+    type: "lycee-cpge",
+    lat: 48.8924, lng: 2.2047,
+    url: "https://lyc-joliot-curie-nanterre.ac-versailles.fr",
+    cordees: ["Cordée Théâtre - Collège Lycée CPGE", "Maths-Info ambition réussite"]
+  },
+  {
+    nom: "Lycée Hoche — Versailles",
+    type: "lycee-cpge",
+    lat: 48.8044, lng: 2.1352,
+    url: "https://lyc-hoche-versailles.ac-versailles.fr",
+    cordees: ["Maths-Info ambition réussite"]
+  },
+  {
+    nom: "Lycée de la Vallée de Chevreuse — Gif-sur-Yvette",
+    type: "lycee-bts",
+    lat: 48.6864, lng: 2.1317,
+    url: "https://lyc-vallee-de-chevreuse-gif.ac-versailles.fr",
+    cordees: ["Sciences Expérimentales"]
+  },
+  {
+    nom: "LPO Jean Monnet — Franconville",
+    type: "lycee-bts",
+    lat: 48.9886, lng: 2.2306,
+    url: "https://lyc-jean-monnet-franconville.ac-versailles.fr",
+    cordees: ["Orientation positive dans les formations des sciences du vivant du collège au supérieur"]
+  },
+  {
+    nom: "Lycée Viollet-Le-Duc — Villiers-Saint-Frédéric",
+    type: "lycee-bts",
+    lat: 48.7881, lng: 1.9358,
+    url: "https://lyc-viollet-le-duc-villiers.ac-versailles.fr",
+    cordees: ["ÉLAN-CE TOI ! Un nouveau souffle vers la réussite !"]
+  },
+  {
+    nom: "Université Paris Nanterre",
+    type: "univ",
+    lat: 48.9014, lng: 2.2131,
+    url: "https://www.parisnanterre.fr",
+    cordees: ["Les Cordées - Université Paris Nanterre"]
+  },
+  {
+    nom: "UVSQ — Université de Versailles Saint-Quentin-en-Yvelines",
+    type: "univ",
+    lat: 48.7845, lng: 2.0174,
+    url: "https://www.uvsq.fr/cordees-de-la-reussite",
+    cordees: ["La physique en question (mutualisé Paris Saclay)", "Course en cours (mutualisé Paris Saclay)", "Cordée Linguistique (mutualisé Paris Saclay)"]
+  },
+  {
+    nom: "CY Cergy Paris Université",
+    type: "univ",
+    lat: 49.0338, lng: 2.0740,
+    url: "https://www.cyu.fr",
+    cordees: ["Cap Avenir !", "Révèle toi !"]
+  },
+  {
+    nom: "Université Évry Paris-Saclay",
+    type: "univ",
+    lat: 48.6333, lng: 2.4426,
+    url: "https://www.univ-evry.fr",
+    cordees: ["CMQ Industrie"]
+  },
+  {
+    nom: "Université Paris-Saclay",
+    type: "univ",
+    lat: 48.7086, lng: 2.1679,
+    url: "https://www.universite-paris-saclay.fr",
+    cordees: ["A nous la réussite! (mutualisé Paris Saclay)", "Séminaire Lycées", "Aujourd'hui collégien, demain étudiant! (mutualisé Paris Saclay)"]
+  },
+  {
+    nom: "École Polytechnique",
+    type: "grande",
+    lat: 48.7136, lng: 2.2122,
+    url: "https://www.polytechnique.edu",
+    cordees: ["X-Tutorat-Île De France"]
+  },
+  {
+    nom: "EMLV — École de Management Léonard de Vinci",
+    type: "grande",
+    lat: 48.8960, lng: 2.2384,
+    url: "https://www.emlv.fr",
+    cordees: ["Mona Lisa"]
+  },
+  {
+    nom: "ESSEC Business School",
+    type: "grande",
+    lat: 49.0396, lng: 2.0647,
+    url: "https://www.essec.edu",
+    cordees: ["PQPM 78-95 «Une Grande École, pourquoi pas moi ?»", "PQPM 93 «Une Grande École, pourquoi pas moi ?»", "CAP Métiers", "AERE «Apprendre et Réussir Ensemble»", "PHARES - Par-delà le Handicap"]
+  },
+  {
+    nom: "CentraleSupélec",
+    type: "grande",
+    lat: 48.7097, lng: 2.1678,
+    url: "https://www.centralesupelec.fr",
+    cordees: ["EcoClubs", "Michelin (mutualisé Paris Saclay)", "Scientifilles", "Open (mutualisé Paris Saclay)", "PourQuoi Pas Moi (mutualisé Paris Saclay)"]
+  },
+  {
+    nom: "Mines Paris — PSL",
+    type: "grande",
+    lat: 48.8444, lng: 2.3403,
+    url: "https://www.minesparis.psl.eu",
+    cordees: ["Poursuite d'études Mines Paris"]
+  },
+  {
+    nom: "ENS Paris-Saclay",
+    type: "grande",
+    lat: 48.7131, lng: 2.2027,
+    url: "https://ens-paris-saclay.fr",
+    cordees: ["Objectif SciENS"]
+  },
+  {
+    nom: "AgroParisTech / Campus Agro Paris Saclay",
+    type: "grande",
+    lat: 48.7136, lng: 2.2009,
+    url: "https://www.agroparistech.fr",
+    cordees: ["Cordée Lycée Léonard de Vinci – AgroParisTech"]
+  },
+  {
+    nom: "ENSAE Paris",
+    type: "grande",
+    lat: 48.7131, lng: 2.2055,
+    url: "https://www.ensae.fr",
+    cordees: ["Ensae-Tremplin"]
+  },
+  {
+    nom: "ENSA Versailles — École Nationale Supérieure d'Architecture",
+    type: "grande",
+    lat: 48.8014, lng: 2.1243,
+    url: "https://www.versailles.archi.fr",
+    cordees: ["Exposition universelle du passé"]
+  },
+  {
+    nom: "Institut Polytechnique de Paris",
+    type: "grande",
+    lat: 48.7131, lng: 2.2108,
+    url: "https://www.ip-paris.fr",
+    cordees: ["Cordée IP Paris-Essonne", "Les Cordées de la réussite de Télécom Paris"]
+  },
+  {
+    nom: "Sciences Po Saint-Germain-en-Laye (CY)",
+    type: "grande",
+    lat: 48.8994, lng: 2.0872,
+    url: "https://sciencespo.cyu.fr",
+    cordees: ["PaïdEia — Programme d'études intégrées"]
+  },
+  {
+    nom: "ENSEA — Cergy",
+    type: "grande",
+    lat: 49.0340, lng: 2.0761,
+    url: "https://www.ensea.fr",
+    cordees: ["IngénIEur(e)s de demain"]
+  },
+  {
+    nom: "École de Biologie Industrielle — Cergy",
+    type: "grande",
+    lat: 49.0347, lng: 2.0769,
+    url: "https://www.ebi-edu.com",
+    cordees: ["Une Grande École : PourQuoi Pas Moi ?"]
+  },
+  {
+    nom: "ENSAPC — École Nationale Supérieure d'Art de Cergy",
+    type: "grande",
+    lat: 49.0394, lng: 2.0731,
+    url: "https://www.ensapc.fr",
+    cordees: ["En Déplacement"]
+  },
+  {
+    nom: "IFSI MGEN — La Verrière",
+    type: "ifsi",
+    lat: 48.7567, lng: 1.9594,
+    url: "https://www.mgen.fr",
+    cordees: ["EnCORe DES Soins !"]
+  },
+  {
+    nom: "IFSI Poissy / Saint-Germain-en-Laye",
+    type: "ifsi",
+    lat: 48.9287, lng: 2.0397,
+    url: "https://www.chi-poissy-st-germain.fr",
+    cordees: ["Projet Cordée IFSI Poissy - Lycée WEISS Achères"]
+  },
+  {
+    nom: "IFSI Les Mureaux",
+    type: "ifsi",
+    lat: 49.0004, lng: 1.9148,
+    url: "https://www.chi-les-mureaux.fr",
+    cordees: ["Cordée de la réussite Campus In Santé - IFSI"]
+  },
+  {
+    nom: "IFSI Rueil-Malmaison",
+    type: "ifsi",
+    lat: 48.8775, lng: 2.1875,
+    url: "https://www.hopital-rueil-malmaison.fr",
+    cordees: ["IDE à l'IFSI STELL : AMBITION POSSIBLE ! Saison 2"]
+  },
+  {
+    nom: "IRFASE — Évry (Formation action sociale)",
+    type: "ifsi",
+    lat: 48.6286, lng: 2.4284,
+    url: "https://www.irfase.com",
+    cordees: ["La Lucarne du Travail social"]
+  }
+];
+
+const colors = {
+  "univ": "#185FA5",
+  "grande": "#3B6D11",
+  "lycee-cpge": "#BA7517",
+  "lycee-bts": "#993556",
+  "ifsi": "#7F77DD"
+};
+
+function createIcon(type) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:${colors[type]};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.35);"></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+    popupAnchor: [0, -10]
+  });
+}
+
+const map = L.map('leaflet-map', { zoomControl: true }).setView([48.82, 2.17], 9);
+
+L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+  attribution: '&copy; Google Maps',
+  maxZoom: 20
+}).addTo(map);
+
+etablissements.forEach(e => {
+  const marker = L.marker([e.lat, e.lng], { icon: createIcon(e.type) }).addTo(map);
+  const cordeesHtml = e.cordees.map(c => `<li style="margin-bottom:3px;">• ${c}</li>`).join('');
+  marker.bindPopup(`
+    <div style="font-family:sans-serif;min-width:210px;max-width:280px;">
+      <div style="font-weight:600;font-size:13px;margin-bottom:6px;color:#111;">${e.nom}</div>
+      <div style="font-size:11px;color:#666;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">Cordée(s)</div>
+      <ul style="list-style:none;padding:0;margin:0 0 8px;font-size:12px;color:#333;">${cordeesHtml}</ul>
+      <a href="${e.url}" target="_blank" style="font-size:12px;color:#185FA5;text-decoration:none;">Voir le site →</a>
+    </div>
+  `);
+});
+</script>
